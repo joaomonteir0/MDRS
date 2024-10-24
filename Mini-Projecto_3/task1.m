@@ -7,13 +7,13 @@ nVoIPs = [10, 20, 30, 40];  % VoIP flows
 N = 20;        % numero de simulações
 alpha = 0.1;   % for 90% confidence interval
 
-% Preallocate result arrays
+% Results arrays
 PLdata_results = zeros(N, length(nVoIPs));
 PLVoIP_results = zeros(N, length(nVoIPs));
 APDdata_results = zeros(N, length(nVoIPs));
 APDVoIP_results = zeros(N, length(nVoIPs));
 
-% Simulação
+% Simulation
 for i = 1:length(nVoIPs)
     for j = 1:N
         % Run Sim3 for each VoIP flow
@@ -22,7 +22,7 @@ for i = 1:length(nVoIPs)
     end
 end
 
-% Compute means and confidence intervals
+% Calculate mean and confidence intervals
 mean_PLdata = mean(PLdata_results);
 mean_PLVoIP = mean(PLVoIP_results);
 mean_APDdata = mean(APDdata_results);
