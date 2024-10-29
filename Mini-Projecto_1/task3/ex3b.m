@@ -1,3 +1,5 @@
+%% Exercise 3.b.
+
 % Parameters
 lambda = 1500;  % packets per second for data
 C = 10;         % Link bandwidth in Mbps
