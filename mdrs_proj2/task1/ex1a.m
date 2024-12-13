@@ -1,46 +1,57 @@
-%% Exercise 1.a.
+%% 1.a.
 
-clear all
-close all
+clear
 clc
 
+% Carregar os dados de entrada
 load('InputDataProject2.mat');
 
-v = 2e5;
-anycastNodes = [3, 10];
-
-D = L / v;
-
+% Definir os parâmetros
 nNodes = size(Nodes, 1);
 nFlows = size(T, 1);
+nLinks = size(Links, 1);
+
+v = 2 * 10^5; % velocidade da luz em km/s
+D = L / v; % matriz de atrasos de propagação
+
+% Inicializar variáveis para armazenar os atrasos
 roundTripDelays = zeros(nFlows, 1);
 
-unicastFlows = find(T(:, 1) == 1 | T(:, 1) == 2);
-for f = unicastFlows'
-    [shortestPath, totalCost] = kShortestPath(D, T(f, 2), T(f, 3), 1);
-    roundTripDelays(f) = 2 * totalCost; % Round-trip delay
-end
-
-anycastFlows = find(T(:, 1) == 3);
-for f = anycastFlows'
-    bestDelay = inf;
-    for anycastNode = anycastNodes
-        [shortestPath, totalCost] = kShortestPath(D, T(f, 2), anycastNode, 1);
-        if totalCost < bestDelay
-            bestDelay = totalCost;
+% Calcular os caminhos mais curtos e os atrasos de ida e volta
+for n = 1:nFlows
+    if T(n, 1) == 1 || T(n, 1) == 2
+        [shortestPath, totalCost] = kShortestPath(D, T(n, 2), T(n, 3), 1);
+        roundTripDelays(n) = 2 * totalCost; % ida e volta
+    elseif T(n, 1) == 3
+        anycastNodes = [3 10];
+        cost = inf;
+        for i = anycastNodes
+            [shortestPath, totalCost] = kShortestPath(D, T(n, 2), i, 1);
+            if totalCost < cost
+                cost = totalCost;
+            end
         end
+        roundTripDelays(n) = 2 * cost; % ida e volta
     end
-    roundTripDelays(f) = 2 * bestDelay; % Round-trip delay
 end
 
-worstUnicastDelay = max(roundTripDelays(unicastFlows));
-averageUnicastDelay = mean(roundTripDelays(unicastFlows));
+% Calcular os atrasos de ida e volta para cada serviço
+worstRoundTripDelay = zeros(3, 1);
+averageRoundTripDelay = zeros(3, 1);
 
-worstAnycastDelay = max(roundTripDelays(anycastFlows));
-averageAnycastDelay = mean(roundTripDelays(anycastFlows));
+for s = 1:3
+    serviceDelays = roundTripDelays(T(:, 1) == s);
+    worstRoundTripDelay(s) = max(serviceDelays);
+    averageRoundTripDelay(s) = mean(serviceDelays);
+end
 
-fprintf('Anycast nodes = %d %d\n', anycastNodes);
-fprintf('Worst round-trip delay (unicast service) = %.2f ms\n', worstUnicastDelay * 1e3);
-fprintf('Average round-trip delay (unicast service) = %.2f ms\n', averageUnicastDelay * 1e3);
-fprintf('Worst round-trip delay (anycast service) = %.2f ms\n', worstAnycastDelay * 1e3);
-fprintf('Average round-trip delay (anycast service) = %.2f ms\n', averageAnycastDelay * 1e3);
+% Exibir os resultados
+fprintf('Worst round-trip delay (ms):\n');
+fprintf('Unicast Service 1: %.2f ms\n', worstRoundTripDelay(1) * 1000);
+fprintf('Unicast Service 2: %.2f ms\n', worstRoundTripDelay(2) * 1000);
+fprintf('Anycast Service 3: %.2f ms\n', worstRoundTripDelay(3) * 1000);
+
+fprintf('\nAverage round-trip delay (ms):\n');
+fprintf('Unicast Service 1: %.2f ms\n', averageRoundTripDelay(1) * 1000);
+fprintf('Unicast Service 2: %.2f ms\n', averageRoundTripDelay(2) * 1000);
+fprintf('Anycast Service 3: %.2f ms\n', averageRoundTripDelay(3) * 1000);
