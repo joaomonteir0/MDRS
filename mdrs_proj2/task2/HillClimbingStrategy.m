@@ -1,10 +1,8 @@
-function [sol, Loads, maxLoad, energy] = HillClimbingStrategy(nNodes, Links, T, sP, nSP, sol, Loads, energy, L)
+function [sol, load] = HillClimbingStrategy(nNodes, Links, T, sP, nSP, sol, load)
     nFlows = size(T,1);    
     % set the best local variables
-    maxLoad = max(max(Loads(:, 3:4)));
-    bestLocalLoads = Loads;
+    bestLocalLoad = load;
     bestLocalSol = sol;
-    bestLocalEnergy = energy;
 
     % Hill Climbing Strategy
     improved = true;
@@ -18,31 +16,21 @@ function [sol, Loads, maxLoad, energy] = HillClimbingStrategy(nNodes, Links, T, 
                     auxSol = sol;
                     auxSol(flow) = path;
                     % calculate loads
-                    [auxLoads, auxLinkEnergy] = calculateLinkLoadEnergy(nNodes, Links, T, sP, auxSol, L);
-                    nodeEnergy = calculateNodeEnergy(T, sP, nNodes, 500, auxSol);
-                    auxEnergy = auxLinkEnergy + nodeEnergy;
+                    Loads = calculateLinkLoads(nNodes, Links, T, sP, auxSol);
+                    auxLoad = max(max(Loads(:, 3:4)));
                         
-                    % check if the current link energy is better then best
-                    % local energy
-                    if auxEnergy < bestLocalEnergy
-                        bestLocalLoads = auxLoads;
+                    % check if the current load is better then start load
+                    if auxLoad < bestLocalLoad
+                        bestLocalLoad = auxLoad;
                         bestLocalSol = auxSol;
-                        bestLocalEnergy = auxEnergy;
                     end
                 end
             end
         end
 
-        if bestLocalEnergy < energy
-            Loads = bestLocalLoads;
+        if bestLocalLoad < load
+            load = bestLocalLoad;
             sol = bestLocalSol;
-            energy = bestLocalEnergy;
-
-            if Loads == Inf
-                maxLoad = Inf;
-            else
-                maxLoad = max(max(Loads(:, 3:4)));
-            end
         else
             improved = false;
         end

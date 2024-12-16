@@ -1,102 +1,91 @@
-%% Task 2a
-clear all
-close all
+%% 2.a.
+
+clear
 clc
 
-% Load project data
+% Carregar os dados de entrada
 load('InputDataProject2.mat');
 
-% Declare global capacity
-global capacity;
-capacity = 100; % Default link capacity (Gbps)
-
-% Parameters
+% Definir os parâmetros
 nNodes = size(Nodes, 1);
 nFlows = size(T, 1);
-anycastNodes = [3 10]; % Anycast nodes for this task
-k = 6; % Number of candidate paths
-timeLimit = 30; % Time limit in seconds
+nLinks = size(Links, 1);
+k = 6; % número de caminhos candidatos
+maxTime = 30; % tempo máximo de execução em segundos
+anycastNodes = [3 10];
 
-% Compute k-shortest paths for unicast flows
-sP_uni = cell(1, nFlows); % sP{f}{i} is the i-th path of flow f
-nSP = zeros(1, nFlows); % Number of paths for each flow
+v = 2 * 10^5; % velocidade da luz em km/s
+D = L / v; % matriz de atrasos de propagação
+
+% Inicializar variáveis para armazenar os melhores resultados
+bestSolution = [];
+minWorstLinkLoad = inf;
+bestDelays = [];
+bestTaux = [];
+bestSP = [];
+totalCycles = 0;
+bestTime = 0;
+bestCycle = 0;
+
+% Gerar caminhos candidatos para cada fluxo unicast
+sP = cell(1, nFlows);
+nSP = zeros(1, nFlows);
 for f = 1:nFlows
-    if T(f, 3) > 0 % Unicast flow
-        [shortestPaths, ~] = kShortestPath(L, T(f, 2), T(f, 3), k);
-        sP_uni{f} = shortestPaths;
-        nSP(f) = length(shortestPaths);
+    if T(f, 1) == 1 || T(f, 1) == 2
+        [shortestPaths, totalCosts] = kShortestPath(D, T(f, 2), T(f, 3), k);
+        sP{f} = shortestPaths;
+        nSP(f) = length(totalCosts);
     end
 end
 
-% Compute best paths for anycast flows
-sP_any = cell(1, nFlows); % Candidate paths for anycast flows
-for f = 1:nFlows
-    if T(f, 3) == 0 % Anycast flow
-        [pathsToNode1, ~] = kShortestPath(L, T(f, 2), anycastNodes(1), k);
-        [pathsToNode2, ~] = kShortestPath(L, T(f, 2), anycastNodes(2), k);
-        % Select the shortest path to either anycast node
-        if ~isempty(pathsToNode1) && ~isempty(pathsToNode2)
-            delayNode1 = sum(L(sub2ind(size(L), pathsToNode1{1}(1:end-1), pathsToNode1{1}(2:end))));
-            delayNode2 = sum(L(sub2ind(size(L), pathsToNode2{1}(1:end-1), pathsToNode2{1}(2:end))));
-            if delayNode1 < delayNode2
-                sP_any{f} = pathsToNode1;
-            else
-                sP_any{f} = pathsToNode2;
-            end
-        elseif ~isempty(pathsToNode1)
-            sP_any{f} = pathsToNode1;
-        elseif ~isempty(pathsToNode2)
-            sP_any{f} = pathsToNode2;
-        else
-            sP_any{f} = {}; % No valid paths
-        end
-        nSP(f) = length(sP_any{f});
-    end
-end
-
-% Combine paths for unicast and anycast flows
-sP = sP_uni; % Copy unicast paths initially
-for f = 1:nFlows
-    if T(f, 3) == 0 % Replace with anycast paths
-        sP{f} = sP_any{f};
-    end
-end
-
-% Multi Start Hill Climbing
+% Multi start hill climbing with greedy randomized
 t = tic;
 bestLoad = inf;
-bestEnergy = inf;
-numSolutions = 0;
-cycles = 0;
+contador = 0;
+somador = 0;
+while toc(t) < maxTime
+    % greedy randomized start
+    [sol, load] = greedyRandomizedStrategy(nNodes, Links, T, sP, nSP);
 
-while toc(t) < timeLimit
-    % Greedy Randomized Initial Solution
-    [sol, startLoads, startMaxLoad, startLinkEnergy] = greedyRandomizedStrategy(nNodes, Links, T, sP, nSP, L);
+    [sol, load] = HillClimbingStrategy(nNodes, Links, T, sP, nSP, sol, load);
 
-    % Refine solution with Hill Climbing
-    [sol, Loads, maxLoad, linkEnergy] = HillClimbingStrategy(nNodes, Links, T, sP, nSP, sol, startLoads, startLinkEnergy, L);
-
-    % Calculate total energy (link + node)
-    nodeEnergy = calculateNodeEnergy(T, sP, nNodes, 500, sol); % Node capacity fixed at 500Gbps
-    energy = linkEnergy + nodeEnergy;
-
-    % Update best solution
-    if energy < bestEnergy
+    if load < bestLoad
         bestSol = sol;
-        bestLoad = maxLoad;
-        bestLoads = Loads;
-        bestEnergy = energy;
+        bestLoad = load;
+        bestLoads = calculateLinkLoads(nNodes, Links, T, sP, sol);
         bestLoadTime = toc(t);
+        bestCycle = contador;
     end
-
-    numSolutions = numSolutions + 1;
-    cycles = cycles + 1;
+    contador = contador + 1;
+    somador = somador + load;
 end
 
-% Calculate average max load
-averageMaxLoad = mean(bestLoads(:, 4)); % Assuming column 4 holds the max load values
+% Calcular os atrasos de ida e volta para a melhor solução
+bestDelays = zeros(nFlows, 1);
+for n = 1:nFlows
+    if T(n, 1) == 1 || T(n, 1) == 2
+        bestDelays(n) = sum(D(sub2ind(size(D), sP{n}{bestSol(n)}(1:end-1), sP{n}{bestSol(n)}(2:end))));
+    elseif T(n, 1) == 3
+        bestDelays(n) = min(sum(D(sub2ind(size(D), sP{n}{bestSol(n)}(1:end-1), sP{n}{bestSol(n)}(2:end)))));
+    end
+end
 
-% Print results
-fprintf('Multi start hill climbing with greedy randomized, anycast in nodes %d and %d:\n', anycastNodes(1), anycastNodes(2));
-fprintf('W = %.2f Gbps, No. sol = %d, Av. W = %.2f, time = %.2f sec\n', bestLoad, numSolutions, averageMaxLoad, toc(t));
-fprintf('Best solution found at %.2f sec after %d cycles.\n', bestLoadTime, cycles);
+% Calcular os atrasos de ida e volta
+unicastFlows = find(T(:, 1) == 1 | T(:, 1) == 2);
+anycastFlows = find(T(:, 1) == 3);
+
+worstRoundTripDelayUnicast = max(bestDelays(unicastFlows)) * 2 * 1000;
+averageRoundTripDelayUnicast = mean(bestDelays(unicastFlows)) * 2 * 1000;
+
+worstRoundTripDelayAnycast = max(bestDelays(anycastFlows)) * 2 * 1000;
+averageRoundTripDelayAnycast = mean(bestDelays(anycastFlows)) * 2 * 1000;
+
+% Exibir os resultados
+fprintf('Worst round-trip delay (unicast service): %.2f ms\n', worstRoundTripDelayUnicast);
+fprintf('Average round-trip delay (unicast service): %.2f ms\n', averageRoundTripDelayUnicast);
+fprintf('Worst round-trip delay (anycast service): %.2f ms\n', worstRoundTripDelayAnycast);
+fprintf('Average round-trip delay (anycast service): %.2f ms\n', averageRoundTripDelayAnycast);
+fprintf('Worst link load: %.2f Gbps\n', bestLoad);
+fprintf('Total number of cycles run: %d\n', contador);
+fprintf('Running time at which the best solution was obtained: %.2f seconds\n', bestLoadTime);
+fprintf('Number of cycles at which the best solution was obtained: %d\n', bestCycle);
