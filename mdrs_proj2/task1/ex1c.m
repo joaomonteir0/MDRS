@@ -39,15 +39,23 @@ for i = 1:nNodes
                 delays(n) = totalCost;
                 Taux(n, :) = T(n, 2:5);
             elseif T(n, 1) == 3
-                cost = inf;
-                Taux(n, :) = T(n, 2:5);
-                for k = anycastNodes
-                    [shortestPath, totalCost] = kShortestPath(D, T(n, 2), k, 1);
-                    if totalCost < cost
-                        sP{n} = shortestPath;
-                        cost = totalCost;
-                        delays(n) = totalCost;
-                        Taux(n, 3) = k;
+                if ismember(T(n, 2), anycastNodes)
+                    sP{n} = {T(n, 2)};
+                    nSP{n} = 1;
+                    Taux(n, :) = T(n, 2:5);
+                    Taux(n, 3) = T(n, 2);
+                else
+                    cost = inf;
+                    Taux(n, :) = T(n, 2:5);
+                    for k = anycastNodes
+                        [shortestPath, totalCost] = kShortestPath(D, T(n, 2), k, 1);
+                        if totalCost < cost
+                            sP{n} = shortestPath;
+                            nSP{n} = 1;
+                            cost = totalCost;
+                            delays(n) = totalCost;
+                            Taux(n, 3) = k;
+                        end
                     end
                 end
             end
@@ -71,19 +79,25 @@ for i = 1:nNodes
 end
 
 % Calcular os atrasos de ida e volta
-unicastFlows = find(T(:, 1) == 1 | T(:, 1) == 2);
+unicastFlows1 = find(T(:, 1) == 1);
+unicastFlows2 = find(T(:, 1) == 2);
 anycastFlows = find(T(:, 1) == 3);
 
-worstRoundTripDelayUnicast = max(bestDelays(unicastFlows)) * 2 * 1000;
-averageRoundTripDelayUnicast = mean(bestDelays(unicastFlows)) * 2 * 1000;
+maxDelayUnicast1 = max(bestDelays(unicastFlows1)) * 2 * 1000;
+avgDelayUnicast1 = mean(bestDelays(unicastFlows1)) * 2 * 1000;
 
-worstRoundTripDelayAnycast = max(bestDelays(anycastFlows)) * 2 * 1000;
-averageRoundTripDelayAnycast = mean(bestDelays(anycastFlows)) * 2 * 1000;
+maxDelayUnicast2 = max(bestDelays(unicastFlows2)) * 2 * 1000;
+avgDelayUnicast2 = mean(bestDelays(unicastFlows2)) * 2 * 1000;
+
+maxDelayAnycast = max(bestDelays(anycastFlows)) * 2 * 1000;
+avgDelayAnycast = mean(bestDelays(anycastFlows)) * 2 * 1000;
 
 % Exibir os resultados
-fprintf('Best anycast nodes: %d  %d\n', bestAnycastNodes(1), bestAnycastNodes(2));
-fprintf('Worst link load: %.2f Gbps\n', minWorstLinkLoad);
-fprintf('Worst round-trip delay (unicast service): %.2f ms\n', worstRoundTripDelayUnicast);
-fprintf('Average round-trip delay (unicast service): %.2f ms\n', averageRoundTripDelayUnicast);
-fprintf('Worst round-trip delay (anycast service): %.2f ms\n', worstRoundTripDelayAnycast);
-fprintf('Average round-trip delay (anycast service): %.2f ms\n', averageRoundTripDelayAnycast);
+fprintf('Best anycast nodes = %d  %d\n', bestAnycastNodes(1), bestAnycastNodes(2));
+fprintf('Worst link load = %.2f Gbps\n', minWorstLinkLoad);
+fprintf('Worst round-trip delay (unicast service 1) = %.2f ms\n', maxDelayUnicast1);
+fprintf('Average round-trip delay (unicast service 1) = %.2f ms\n', avgDelayUnicast1);
+fprintf('Worst round-trip delay (unicast service 2) = %.2f ms\n', maxDelayUnicast2);
+fprintf('Average round-trip delay (unicast service 2) = %.2f ms\n', avgDelayUnicast2);
+fprintf('Worst round-trip delay (anycast service) = %.2f ms\n', maxDelayAnycast);
+fprintf('Average round-trip delay (anycast service) = %.2f ms\n', avgDelayAnycast);

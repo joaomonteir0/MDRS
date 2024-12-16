@@ -20,8 +20,6 @@ anycastNodes = [3 10];
 % Inicializar variáveis
 Taux = zeros(nFlows, 4);
 delays = zeros(nFlows, 1);
-sP = cell(nFlows, 1);
-nSP = cell(nFlows, 1);
 
 % Calcular as rotas mais curtas e os atrasos
 for n = 1:nFlows
@@ -32,16 +30,23 @@ for n = 1:nFlows
         delays(n) = totalCost;
         Taux(n, :) = T(n, 2:5);
     elseif T(n, 1) == 3
-        cost = inf;
-        Taux(n, :) = T(n, 2:5);
-        for i = anycastNodes
-            [shortestPath, totalCost] = kShortestPath(D, T(n, 2), i, 1);
-            if totalCost < cost
-                sP{n} = shortestPath;
-                nSP{n} = 1;
-                cost = totalCost;
-                delays(n) = totalCost;
-                Taux(n, 3) = i;
+        if ismember(T(n, 2), anycastNodes)
+            sP{n} = {T(n, 2)};
+            nSP{n} = 1;
+            Taux(n, :) = T(n, 2:5);
+            Taux(n, 3) = T(n, 2);
+        else
+            cost = inf;
+            Taux(n, :) = T(n, 2:5);
+            for i = anycastNodes
+                [shortestPath, totalCost] = kShortestPath(D, T(n, 2), i, 1);
+                if totalCost < cost
+                    sP{n} = shortestPath;
+                    nSP{n} = 1;
+                    cost = totalCost;
+                    delays(n) = totalCost;
+                    Taux(n, 3) = i;
+                end
             end
         end
     end
@@ -54,8 +59,8 @@ Loads = calculateLinkLoads(nNodes, Links, Taux, sP, ones(nFlows, 1));
 worstLinkLoad = max(max(Loads(:, 3:4)));
 
 % Exibir os resultados
-fprintf('Anycast nodes: %d  %d\n', anycastNodes(1), anycastNodes(2));
-fprintf('Worst link load: %.2f Gbps\n', worstLinkLoad);
+fprintf('Anycast nodes = %d  %d\n', anycastNodes(1), anycastNodes(2));
+fprintf('Worst link load = %.2f Gbps\n', worstLinkLoad);
 for i = 1:nLinks
-    fprintf('{ %d - %d}: %.2f %.2f\n', Loads(i, 1), Loads(i, 2), Loads(i, 3), Loads(i, 4));
+    fprintf('{%d-%d}: %.2f %.2f\n', Loads(i, 1), Loads(i, 2), Loads(i, 3), Loads(i, 4));
 end
