@@ -62,12 +62,7 @@ for i = 1:nNodes
         end
         
         % Calcular os atrasos de ida e volta
-        maxDelayUnicast1 = max(delays(find(T(:, 1) == 1))) * 2 * 1000;
-        avgDelayUnicast1 = mean(delays(find(T(:, 1) == 1))) * 2 * 1000;
-        maxDelayUnicast2 = max(delays(find(T(:, 1) == 2))) * 2 * 1000;
-        avgDelayUnicast2 = mean(delays(find(T(:, 1) == 2))) * 2 * 1000;
         maxDelayAnycast = max(delays(find(T(:, 1) == 3))) * 2 * 1000;
-        avgDelayAnycast = mean(delays(find(T(:, 1) == 3))) * 2 * 1000;
         
         % Atualizar os melhores resultados se o atraso de ida e volta for menor
         if maxDelayAnycast < minWorstRoundTripDelay
