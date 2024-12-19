@@ -1,9 +1,9 @@
-%% 2.a.
+%% 3.a.
 
 clear
 clc
 
-fprintf('------------------------------ Task 2.a.------------------------------\n');
+fprintf('------------------------------ Task 3.a.------------------------------\n');
 
 % carregar os dados
 load('InputDataProject2.mat');
@@ -12,7 +12,7 @@ load('InputDataProject2.mat');
 nNodes = size(Nodes, 1);
 nFlows = size(T, 1);
 nLinks = size(Links, 1);
-k = 6;
+k = 12;
 
 v = 2 * 10^5;
 D = L / v;
@@ -24,14 +24,22 @@ Taux = zeros(nFlows, 4);
 delays = zeros(nFlows, 1);
 sP = cell(nFlows, 1);
 nSP = zeros(nFlows, 1);
+firstPaths = cell(nFlows, 1);
+secondPaths = cell(nFlows, 1);
 
 % calcular os caminhos mais curtos e os atrasos de ida e volta
 for n = 1:nFlows
-    if T(n, 1) == 1 || T(n, 1) == 2
+    if T(n, 1) == 1
         [shortestPaths, totalCosts] = kShortestPath(D, T(n, 2), T(n, 3), k);
         sP{n} = shortestPaths;
         nSP(n) = length(shortestPaths);
         delays(n) = totalCosts(1);
+        Taux(n, :) = T(n, 2:5);
+    elseif T(n, 1) == 2
+        [firstPaths{n}, secondPaths{n}, totalPairCosts] = kShortestPathPairs(D, T(n, 2), T(n, 3), k);
+        sP{n} = firstPaths{n};
+        nSP(n) = length(firstPaths{n});
+        delays(n) = totalPairCosts(1);
         Taux(n, :) = T(n, 2:5);
     elseif T(n, 1) == 3
         if ismember(T(n, 2), anycastNodes)
@@ -70,7 +78,7 @@ maxDelayAnycast = max(delays(anycastFlows)) * 2 * 1000;
 avgDelayAnycast = mean(delays(anycastFlows)) * 2 * 1000;
 
 % parâmetros do algoritmo
-maxTime = 30;
+maxTime = 60;
 bestLoad = inf;
 bestSol = [];
 totalCycles = 0;

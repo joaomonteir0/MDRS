@@ -1,9 +1,8 @@
-%% 2.a.
+%% 2.d.
 
 clear
-clc
 
-fprintf('------------------------------ Task 2.a.------------------------------\n');
+fprintf('------------------------------ Task 2.d.------------------------------\n');
 
 % carregar os dados
 load('InputDataProject2.mat');
@@ -17,7 +16,7 @@ k = 6;
 v = 2 * 10^5;
 D = L / v;
 
-anycastNodes = [3 10];
+anycastNodes = [5 14];
 
 % inicializar variáveis para os atrasos e caminhos
 Taux = zeros(nFlows, 4);

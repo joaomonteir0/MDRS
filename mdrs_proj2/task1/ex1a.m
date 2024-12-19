@@ -3,27 +3,28 @@
 clear
 clc
 
-% Carregar os dados de entrada
+fprintf('------------------------------ Task 1.a.------------------------------\n');
+
+% carregar os dados
 load('InputDataProject2.mat');
 
-% Definir os parâmetros
+% parâmetros
 nNodes = size(Nodes, 1);
 nFlows = size(T, 1);
 nLinks = size(Links, 1);
 
-v = 2 * 10^5; % velocidade da luz em km/s
-D = L / v; % matriz de atrasos de propagação
+v = 2 * 10^5;
+D = L / v;
 
-% Definir os nós anycast
 anycastNodes = [3 10];
 
-% Inicializar variáveis para armazenar os atrasos
+% inicializar variáveis para os atrasos e caminhos
 Taux = zeros(nFlows, 4);
 delays = zeros(nFlows, 1);
 sP = cell(nFlows, 1);
 nSP = cell(nFlows, 1);
 
-% Calcular os caminhos mais curtos e os atrasos de ida e volta
+% calcular os caminhos mais curtos e os atrasos de ida e volta
 for n = 1:nFlows
     if T(n, 1) == 1 || T(n, 1) == 2
         [shortestPath, totalCost] = kShortestPath(D, T(n, 2), T(n, 3), 1);
@@ -54,7 +55,6 @@ for n = 1:nFlows
     end
 end
 
-% Calcular os atrasos de ida e volta
 unicastFlows1 = find(T(:, 1) == 1);
 unicastFlows2 = find(T(:, 1) == 2);
 anycastFlows = find(T(:, 1) == 3);
@@ -68,7 +68,7 @@ avgDelayUnicast2 = mean(delays(unicastFlows2)) * 2 * 1000;
 maxDelayAnycast = max(delays(anycastFlows)) * 2 * 1000;
 avgDelayAnycast = mean(delays(anycastFlows)) * 2 * 1000;
 
-% Exibir os resultados
+% mostrar os resultados
 fprintf('Anycast nodes: %d  %d\n', anycastNodes(1), anycastNodes(2));
 fprintf('Worst round-trip delay (unicast service 1): %.2f ms\n', maxDelayUnicast1);
 fprintf('Average round-trip delay (unicast service 1): %.2f ms\n', avgDelayUnicast1);

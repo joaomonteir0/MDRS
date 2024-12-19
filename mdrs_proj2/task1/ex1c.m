@@ -3,35 +3,37 @@
 clear
 clc
 
-% Carregar os dados de entrada
+fprintf('------------------------------ Task 1.c.------------------------------\n');
+
+% carregar os dados
 load('InputDataProject2.mat');
 
-% Definir os parâmetros
+% parâmetros
 nNodes = size(Nodes, 1);
 nFlows = size(T, 1);
 nLinks = size(Links, 1);
 
-v = 2 * 10^5; % velocidade da luz em km/s
-D = L / v; % matriz de atrasos de propagação
+v = 2 * 10^5;
+D = L / v;
 
-% Inicializar variáveis para armazenar os melhores resultados
+% inicializar variáveis para os melhores resultados
 bestAnycastNodes = [];
 minWorstLinkLoad = inf;
 bestDelays = [];
 bestTaux = [];
 bestSP = [];
 
-% Testar todas as combinações possíveis de dois nós
+% testar todas as combinações possíveis de dois nós
 for i = 1:nNodes
     for j = i+1:nNodes
         anycastNodes = [i j];
         
-        % Inicializar variáveis
+        % inicializar variáveis
         Taux = zeros(nFlows, 4);
         delays = zeros(nFlows, 1);
         sP = cell(nFlows, 1);
         
-        % Calcular as rotas mais curtas e os atrasos
+        % calcular os caminhos mais curtos e os atrasos de ida e volta
         for n = 1:nFlows
             if T(n, 1) == 1 || T(n, 1) == 2
                 [shortestPath, totalCost] = kShortestPath(D, T(n, 2), T(n, 3), 1);
@@ -61,13 +63,13 @@ for i = 1:nNodes
             end
         end
         
-        % Calcular as cargas dos links
+        % calcular as cargas dos links
         Loads = calculateLinkLoads(nNodes, Links, Taux, sP, ones(nFlows, 1));
         
-        % Encontrar a pior carga de link
+        % encontrar a pior carga de link
         worstLinkLoad = max(max(Loads(:, 3:4)));
         
-        % Atualizar os melhores resultados se a carga de link for menor
+        % atualizar os melhores resultados se a carga de link for menor
         if worstLinkLoad < minWorstLinkLoad
             minWorstLinkLoad = worstLinkLoad;
             bestAnycastNodes = anycastNodes;
@@ -78,7 +80,6 @@ for i = 1:nNodes
     end
 end
 
-% Calcular os atrasos de ida e volta
 unicastFlows1 = find(T(:, 1) == 1);
 unicastFlows2 = find(T(:, 1) == 2);
 anycastFlows = find(T(:, 1) == 3);
@@ -92,7 +93,7 @@ avgDelayUnicast2 = mean(bestDelays(unicastFlows2)) * 2 * 1000;
 maxDelayAnycast = max(bestDelays(anycastFlows)) * 2 * 1000;
 avgDelayAnycast = mean(bestDelays(anycastFlows)) * 2 * 1000;
 
-% Exibir os resultados
+% mostrar os resultados
 fprintf('Best anycast nodes = %d  %d\n', bestAnycastNodes(1), bestAnycastNodes(2));
 fprintf('Worst link load = %.2f Gbps\n', minWorstLinkLoad);
 fprintf('Worst round-trip delay (unicast service 1) = %.2f ms\n', maxDelayUnicast1);
