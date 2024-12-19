@@ -1,25 +1,28 @@
 function [sol, load] = HillClimbingStrategy(nNodes, Links, T, sP, nSP, sol, load)
     nFlows = size(T,1);    
-    % set the best local variables
+    % definir as melhores variáveis locais
     bestLocalLoad = load;
     bestLocalSol = sol;
 
-    % Hill Climbing Strategy
+    % hill climbing
     improved = true;
     while improved
-        % test each flow
+    
+        % testar cada fluxo
         for flow = 1 : nFlows
-            % test each path of the flow
+            % testar cada caminho do fluxo
             for path = 1 : nSP(flow)
                 if path ~= sol(flow)
-                    % change the path for that flow
+
+                    % alterar o caminho para esse fluxo
                     auxSol = sol;
                     auxSol(flow) = path;
-                    % calculate loads
+
+                    % calcular as cargas
                     Loads = calculateLinkLoads(nNodes, Links, T, sP, auxSol);
                     auxLoad = max(max(Loads(:, 3:4)));
                         
-                    % check if the current load is better then start load
+                    % verificar se a carga atual é melhor que a carga inicial
                     if auxLoad < bestLocalLoad
                         bestLocalLoad = auxLoad;
                         bestLocalSol = auxSol;
